@@ -38,9 +38,9 @@ packageIDs map like this in the website:
 3. Run python createTrainIdLabelImgs.py
 
 ## Train
-1. Modify 'path' in 'yolov5-sg\data\cityscapes.yaml'
-2. Modify --data, --batch-size, --device ... in parse_opt of 'yolov5-sg\train.py'
-3. python train.py (single GPU), python -m torch.distributed.run --nproc_per_node N train.py --sync-bn (N GPUs)
+1. Modify 'path' in 'cspsg\data\cityscapes.yaml'
+2. Modify --data, --batch-size, --device ... in parse_opt of 'cspsg\train_sg.py'
+3. python train_sg.py (single GPU), python -m torch.distributed.run --nproc_per_node N train.py --sync-bn (N GPUs)
 
 ## References
 <a id="1">[1]</a> M. Cordts, M. Omran, S. Ramos, T. Rehfeld, M. Enzweiler, R. Benenson, U. Franke, S. Roth, and B. Schiele, “The Cityscapes Dataset for Semantic Urban Scene Understanding,” in Proc. of the IEEE Conference on Computer Vision and Pattern Recognition (CVPR), 2016. 
