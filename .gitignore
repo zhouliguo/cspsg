@@ -69,6 +69,7 @@ yolov3-tiny.conv.15
 __pycache__/
 *.py[cod]
 *$py.class
+.vscode/
 
 # C extensions
 *.so
