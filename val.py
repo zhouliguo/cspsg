@@ -14,7 +14,7 @@ import warnings
 warnings.filterwarnings('ignore', category=UserWarning)
 
 weights = 'runs/train/exp10/weights/best.pt'
-val_path = 'C:\\datasets\\cityscapes\\leftImg8bit\\val'
+val_path = 'datasets\\cityscapes\\leftImg8bit\\val'
 batch_size = 1
 workers = 0
 phase = ' '  # val: original, test: original + fliplr
