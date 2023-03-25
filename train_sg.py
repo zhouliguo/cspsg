@@ -400,13 +400,13 @@ def train(hyp, opt, device, callbacks):  # hyp is path/to/hyp.yaml or hyp dictio
 
 def parse_opt(known=False):
     parser = argparse.ArgumentParser()
-    parser.add_argument('--weights', type=str, default=ROOT / 'yolov5s.pt', help='initial weights path')
+    parser.add_argument('--weights', type=str, default=ROOT / 'yolov5l.pt', help='initial weights path')
     #parser.add_argument('--weights', type=str, default='/opt/data/liguo/yolov5/runs/train/exp11/weights/best.pt', help='initial weights path')
-    parser.add_argument('--cfg', type=str, default='yolov5s-4.yaml', help='model.yaml path')
+    parser.add_argument('--cfg', type=str, default='yolov5l-4.yaml', help='model.yaml path')
     parser.add_argument('--data', type=str, default=ROOT / 'data/cityscapes.yaml', help='dataset.yaml path')
     parser.add_argument('--hyp', type=str, default=ROOT / 'data/hyps/hyp.scratch-low.yaml', help='hyperparameters path')
     parser.add_argument('--epochs', type=int, default=3)
-    parser.add_argument('--batch-size', type=int, default=4, help='total batch size for all GPUs, -1 for autobatch')
+    parser.add_argument('--batch-size', type=int, default=2, help='total batch size for all GPUs, -1 for autobatch')
     parser.add_argument('--imgsz', '--img', '--img-size', type=int, default=512, help='train, val image size (pixels)')
     parser.add_argument('--rect', action='store_true', help='rectangular training')
     parser.add_argument('--resume', nargs='?', const=True, default=False, help='resume most recent training')

@@ -9,7 +9,7 @@
 
 # Train/val/test sets as 1) dir: path/to/imgs, 2) file: path/to/imgs.txt, or 3) list: [path/to/imgs1, path/to/imgs2, ..]
 path: /home/zlg/Documents/datasets/cityscapes  # dataset root dir
-train: leftImg8bit/train  # train images (relative to 'path') 118287 images
+train: leftImg8bit/val  # train images (relative to 'path') 118287 images
 val: leftImg8bit/val  # val images (relative to 'path') 5000 images
 test: test-dev2017.txt  # 20288 of 40670 images, submit to https://competitions.codalab.org/competitions/20794
 
