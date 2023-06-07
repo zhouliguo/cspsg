@@ -12,9 +12,10 @@ warnings.filterwarnings('ignore', category=UserWarning)
 
 def compute_latency_ms_pytorch():
     iterations = 500
-    weights = 'runs/train/exp10/weights/m_best.pt'
+    weights = 'runs/train/exp3/weights/best.pt'
 
     device = torch.device('cuda:0')
+    #device = torch.device('cpu')
     model = torch.load(weights, map_location='cpu') # load checkpoint to CPU to avoid CUDA memory leak
 
     model.eval()
@@ -24,12 +25,12 @@ def compute_latency_ms_pytorch():
         input = torch.randn((1,3,1024,2048)).to(device, non_blocking=True)
         input.uniform_(0,1)
         elapsed_time = 0
-        for i in range(500):
-            t_start = time.time()
-            outputs = model(input)[0]
-            t_end = time.time()
-            elapsed_time = elapsed_time+(t_end - t_start)
-            print(i)
+        t_start = time.time()
+        for i in range(iterations):
+            outputs = model(input)
+            #print(i)
+        t_end = time.time()
+        elapsed_time = t_end - t_start
         latency = elapsed_time / iterations * 1000
     torch.cuda.empty_cache()
     return latency
