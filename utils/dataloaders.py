@@ -266,6 +266,126 @@ def img2label_paths_c(img_paths):
     # Define label paths as a function of image paths
     sa, sb = f'{os.sep}leftImg8bit{os.sep}', f'{os.sep}gtFine{os.sep}'  # /images/, /labels/ substrings
     return [sb.join(x.rsplit(sa, 1)).rsplit('_', 1)[0] + '_gtCoarse_labelTrainIds.png' for x in img_paths]
+    #return [sb.join(x.rsplit(sa, 1)).rsplit('_', 1)[0] + '_gtCoarse_labelTrainIds.png' for x in img_paths]
+
+def img2label_paths_cam(img_paths):
+    # Define label paths as a function of image paths
+    sa, sb = f'{os.sep}images{os.sep}', f'{os.sep}labels{os.sep}'  # /images/, /labels/ substrings
+    return [sb.join(x.rsplit(sa, 1)).rsplit('.', 1)[0] + '_L.png' for x in img_paths]
+
+class LoadImagesAndLabels_sg_cam(Dataset):
+    '''
+    phase: 'train', 'val' or 'test'. 
+           'train' include data augmentation, 
+           'test' return an additional flipped image.
+    '''
+    def __init__(self, path, phase, size=None, hyp=None):
+        self.image_path = []
+        self.label_path = []
+        f = open(path)
+        lines = f.readlines()
+        for l in lines:
+            l1,l2 = l.strip('\n').split(' ')
+            self.image_path.append(l1)
+            self.label_path.append(l2)
+        f.close()
+
+        self.phase = phase
+        self.hyp = hyp
+        if phase == 'train':
+            self.w = size
+            self.h = size
+        self.albumentations = Albumentations() if phase == 'train' else None
+        #self.mean = torch.as_tensor([0.485, 0.456, 0.406])
+        #self.std = torch.as_tensor([0.229, 0.224, 0.225])
+
+    def __len__(self):
+        return len(self.image_path)
+    
+    def __getitem__(self, index):
+        image = Image.open(self.image_path[index])
+        label = Image.open(self.label_path[index])
+
+        if self.phase == 'train':
+            reratio = random.uniform(0.5, 1.5)
+
+            img_w = int(image.size[0]*reratio/32)*32
+            img_h = int(image.size[1]*reratio/32)*32
+
+            image = image.resize((img_w, img_h), PIL.Image.BICUBIC)
+            label = label.resize((img_w, img_h), PIL.Image.NEAREST)
+
+            if img_h<self.h:
+                image_new = Image.new(image.mode, (self.w, self.h), (128, 128, 128))
+                label_new = Image.new(label.mode, (self.w, self.h), 255)
+                
+                image_new.paste(image, (max(((self.w-img_w)//2), 0), (self.h-img_h)//2))
+                label_new.paste(label, (max(((self.w-img_w)//2), 0), (self.h-img_h)//2))
+
+                image = image_new
+                label = label_new
+            
+            # No improvement
+            # if random.random() < 0.5:
+            #    angle = transforms.RandomRotation.get_params(degrees=[-45.0, 45.0])
+            #    image = transformsF.rotate(image, angle, fill=0)
+            #    label = transformsF.rotate(label, angle, fill=255)
+
+            i, j, h, w = transforms.RandomCrop.get_params(image, (self.h, self.w))
+
+            # Random crop
+            image = np.array(transformsF.crop(image, i, j, h, w), np.uint8)
+            label = np.array(transformsF.crop(label, i, j, h, w), np.int64)
+
+            # Random flip left-right
+            if random.random() < 0.5:
+                image = np.fliplr(image)
+                label = np.fliplr(label)
+
+                image = np.ascontiguousarray(image)
+                label = np.ascontiguousarray(label)
+
+            label_19 = np.zeros((h, w, 11), np.float32)
+            for k in range(11):
+                index_cls = np.where(label==k)
+                if len(index_cls[0])!=0:
+                    label_19[index_cls[0], index_cls[1], k] = 1
+
+            index_cls = np.where(label>=11)
+            if len(index_cls[0])!=0:
+                label_19[index_cls[0], index_cls[1], 0] = -1
+
+            #img, labels = random_perspective(img,labels,degrees=hyp['degrees'],translate=hyp['translate'],scale=hyp['scale'],shear=hyp['shear'],perspective=hyp['perspective'])
+
+            image = self.albumentations(image)
+
+            # HSV color-space
+            #augment_hsv(image, hgain=self.hyp['hsv_h'], sgain=self.hyp['hsv_s'], vgain=self.hyp['hsv_v'])
+
+        else:
+            image_t = np.zeros((736,960,3), np.uint8)
+            image_t[:720,:,:] = np.array(image, np.uint8)
+            image = image_t
+            label_19 = np.array(label, np.int64)
+
+            if self.phase == 'test' or self.phase == 'submit':
+                image_f = np.fliplr(image)
+                image_f = np.ascontiguousarray(image_f)
+
+        image = torch.from_numpy(image)/255.0
+        #image = image.sub_(self.mean).div_(self.std)
+        image = image.permute(2, 0, 1)  # HWC to CHW
+
+        label = torch.from_numpy(label_19)
+
+        if self.phase == 'test' or self.phase == 'submit':
+            image_f = torch.from_numpy(image_f)/255.0
+            #image_f = image_f.sub_(self.mean).div_(self.std)
+            image_f = image_f.permute(2, 0, 1)  # HWC to CHW
+
+            return image, label, image_f, self.image_path[index]
+
+        return image, label, self.image_path[index]
 
 class LoadImagesAndLabels_sg(Dataset):
     '''
@@ -494,6 +614,11 @@ class LoadImagesAndLabels_sg_mosaic(Dataset):
     def __init__(self, path, phase, size=None, hyp=None):
         self.image_path = glob.glob(os.path.join(path,'*','*.png'), recursive=True)
         self.label_path = img2label_paths(self.image_path)
+        nf = len(self.image_path)
+
+        self.image_path = self.image_path + glob.glob(os.path.join(path+'_extra','*','*.png'), recursive=True)
+        self.label_path = self.label_path + img2label_paths_c(self.image_path[nf:])
+
         self.phase = phase
         self.hyp = hyp
         if phase == 'train':

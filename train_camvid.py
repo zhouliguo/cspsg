@@ -44,7 +44,7 @@ from models.yolo import Model
 from utils.autoanchor import check_anchors
 from utils.autobatch import check_train_batch_size
 from utils.callbacks import Callbacks
-from utils.dataloaders import create_dataloader, LoadImagesAndLabels_sg_fc
+from utils.dataloaders import create_dataloader, LoadImagesAndLabels_sg_cam
 from utils.downloads import attempt_download
 from utils.general import (LOGGER, check_amp, check_dataset, check_file, check_git_status, check_img_size,
                            check_requirements, check_suffix, check_version, check_yaml, colorstr, get_latest_run,
@@ -127,7 +127,7 @@ def train(hyp, opt, device, callbacks):  # hyp is path/to/hyp.yaml or hyp dictio
         ckpt = torch.load(weights, map_location='cpu')  # load checkpoint to CPU to avoid CUDA memory leak
         model = Model(cfg or ckpt['model'].yaml, ch=3, nc=nc).to(device)  # create
         exclude = ['anchor'] if (cfg or hyp.get('anchors')) and not resume else []  # exclude keys
-        csd = ckpt#['model'].float().state_dict()  # checkpoint state_dict as FP32
+        csd = ckpt.float().state_dict()    #ckpt['model'].float().state_dict()  # checkpoint state_dict as FP32
         csd = intersect_dicts(csd, model.state_dict(), exclude=exclude)  # intersect
         model.load_state_dict(csd, strict=False)  # load
         LOGGER.info(f'Transferred {len(csd)}/{len(model.state_dict())} items from {weights}')  # report
@@ -228,14 +228,14 @@ def train(hyp, opt, device, callbacks):  # hyp is path/to/hyp.yaml or hyp dictio
         LOGGER.info('Using SyncBatchNorm()')
 
     # Trainloader
-    train_dataset = LoadImagesAndLabels_sg_fc(train_path, phase='train', size=imgsz, hyp=hyp)
+    train_dataset = LoadImagesAndLabels_sg_cam(train_path, phase='train', size=imgsz, hyp=hyp)
     train_sampler = None if RANK == -1 else distributed.DistributedSampler(train_dataset, shuffle=True)
     train_loader = torch.utils.data.DataLoader(train_dataset, batch_size=batch_size, shuffle=True and train_sampler is None, num_workers=workers, sampler=train_sampler, pin_memory=True)
 
     nb = len(train_loader)  # number of batches
     # assert mlc < nc, f'Label class {mlc} exceeds nc={nc} in {data}. Possible class labels are 0-{nc - 1}'
 
-    val_dataset = LoadImagesAndLabels_sg_fc(val_path, phase='val')
+    val_dataset = LoadImagesAndLabels_sg_cam(val_path, phase='val')
     val_loader = torch.utils.data.DataLoader(val_dataset, batch_size=1, shuffle=False, num_workers=workers, pin_memory=True)
 
     # DDP mode
@@ -370,8 +370,8 @@ def train(hyp, opt, device, callbacks):  # hyp is path/to/hyp.yaml or hyp dictio
                 imgs = imgs.to(device, non_blocking=True)
                 labels = labels.cpu().numpy()
                 preds = model(imgs)[0]
-                #if nc == 11:
-                #    preds = preds[:,:720]
+                if nc == 11:
+                    preds = preds[:,:720]
                 preds = torch.argmax(preds, dim=3).detach().cpu().numpy()
                 metrics.update(labels, preds)
                 #index = torch.where(labels!=255)
@@ -389,8 +389,8 @@ def train(hyp, opt, device, callbacks):  # hyp is path/to/hyp.yaml or hyp dictio
             miou = score["Mean IoU"]
             if miou_max < miou:
                 miou_max = miou
-                #file_name = str(epoch)+'.pt'
-                file_name = 'best.pt'
+                file_name = str(epoch)+'.pt'
+                #file_name = 'best.pt'
                 torch.save(deepcopy(de_parallel(model)), w / file_name)
             
             print('Accuracy:', accuracy, 'Miou:', miou, 'lr:', lr)
@@ -404,14 +404,14 @@ def train(hyp, opt, device, callbacks):  # hyp is path/to/hyp.yaml or hyp dictio
 
 def parse_opt(known=False):
     parser = argparse.ArgumentParser()
-    parser.add_argument('--weights', type=str, default=ROOT / 'yolov8x.pt', help='initial weights path')
+    parser.add_argument('--weights', type=str, default=ROOT / 'best.pt', help='initial weights path')
     #parser.add_argument('--weights', type=str, default='/opt/data/liguo/yolov5/runs/train/exp11/weights/best.pt', help='initial weights path')
-    parser.add_argument('--cfg', type=str, default='yolov8-4.yaml', help='model.yaml path')
-    parser.add_argument('--data', type=str, default=ROOT / 'data/cityscapes.yaml', help='dataset.yaml path')
+    parser.add_argument('--cfg', type=str, default='yolov5l-4.yaml', help='model.yaml path')
+    parser.add_argument('--data', type=str, default=ROOT / 'data/camvid.yaml', help='dataset.yaml path')
     parser.add_argument('--hyp', type=str, default=ROOT / 'data/hyps/hyp.scratch-low.yaml', help='hyperparameters path')
     parser.add_argument('--epochs', type=int, default=300)
-    parser.add_argument('--batch-size', type=int, default=8, help='total batch size for all GPUs, -1 for autobatch')
-    parser.add_argument('--imgsz', '--img', '--img-size', type=int, default=512, help='train, val image size (pixels)')
+    parser.add_argument('--batch-size', type=int, default=6, help='total batch size for all GPUs, -1 for autobatch')
+    parser.add_argument('--imgsz', '--img', '--img-size', type=int, default=640, help='train, val image size (pixels)')
     parser.add_argument('--rect', action='store_true', help='rectangular training')
     parser.add_argument('--resume', nargs='?', const=True, default=False, help='resume most recent training')
     parser.add_argument('--nosave', action='store_true', help='only save final checkpoint')
@@ -422,7 +422,7 @@ def parse_opt(known=False):
     parser.add_argument('--bucket', type=str, default='', help='gsutil bucket')
     parser.add_argument('--cache', type=str, nargs='?', const='ram', help='--cache images in "ram" (default) or "disk"')
     parser.add_argument('--image-weights', action='store_true', help='use weighted image selection for training')
-    parser.add_argument('--device', default='0,1', help='cuda device, i.e. 0 or 0,1,2,3 or cpu')
+    parser.add_argument('--device', default='0', help='cuda device, i.e. 0 or 0,1,2,3 or cpu')
     parser.add_argument('--multi-scale', action='store_true', default=False, help='vary img-size +/- 50%%')
     parser.add_argument('--single-cls', action='store_true', help='train multi-class data as single-class')
     parser.add_argument('--optimizer', type=str, choices=['SGD', 'Adam', 'AdamW'], default='SGD', help='optimizer')

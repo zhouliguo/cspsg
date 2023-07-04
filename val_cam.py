@@ -4,7 +4,7 @@ import cv2
 import torch
 from torch.nn import functional as F
 
-from utils.dataloaders import LoadImagesAndLabels_sg
+from utils.dataloaders import LoadImagesAndLabels_sg_cam
 from stream_metrics import StreamSegMetrics
 import time
 
@@ -13,16 +13,16 @@ from labels import trainId2label
 import warnings
 warnings.filterwarnings('ignore', category=UserWarning)
 
-weights = 'best1.pt'
-val_path = 'D:\\datasets\\cityscapes\\leftImg8bit\\val'
+weights = 'runs/train/exp32/weights/152.pt'
+val_path = 'C:\\datasets\\CamVid\\camvid_test.txt'
 batch_size = 1
 workers = 0
-phase = 'submit'  # val: original, test: original + fliplr
+phase = 'test'  # val: original, test: original + fliplr
 
 device = torch.device('cuda:0')
 model = torch.load(weights, map_location='cpu').to(device)  # load checkpoint to CPU to avoid CUDA memory leak
 
-val_dataset = LoadImagesAndLabels_sg(val_path, phase=phase)
+val_dataset = LoadImagesAndLabels_sg_cam(val_path, phase=phase)
 val_loader = torch.utils.data.DataLoader(val_dataset, batch_size=batch_size, num_workers=workers, pin_memory=True)
 
 metrics = StreamSegMetrics(19)
@@ -113,13 +113,13 @@ with torch.no_grad():
                 preds1[preds==j] = trainId2label[j].id
                 preds2[preds==j] = trainId2label[j].color
             preds2[labels[0]==255] = [0,0,0]
-            #cv2.imwrite('results/l/'+file_name, preds1)
+            cv2.imwrite('results/l/'+file_name, preds1)
             cv2.imwrite('results/l_color/'+file_name, preds2[:,:,::-1])
             metrics.update(labels[0], preds)
             print(i)
     elif phase == 'speed':
         sum_time = 0
-        input = torch.randn((1,3,736,960)).to(device, non_blocking=True)
+        input = torch.randn((1,3,1024,2048)).to(device, non_blocking=True)
         input.uniform_(0,1)
         for i in range(1000):  # batch -------------------------------------------------------------
             outputs = model(input)[0]

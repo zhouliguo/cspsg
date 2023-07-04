@@ -8,16 +8,14 @@
 
 
 # Train/val/test sets as 1) dir: path/to/imgs, 2) file: path/to/imgs.txt, or 3) list: [path/to/imgs1, path/to/imgs2, ..]
-path: /mnt/ssd/cityscapes  # dataset root dir
-train: leftImg8bit/train  # train images (relative to 'path') 118287 images
-val: leftImg8bit/val  # val images (relative to 'path') 5000 images
-test: test-dev2017.txt  # 20288 of 40670 images, submit to https://competitions.codalab.org/competitions/20794
+path: D:/datasets/camvid/  # dataset root dir
+train: train.txt  # train images (relative to 'path') 118287 images
+val: test.txt  # val images (relative to 'path') 5000 images
+test: test.txt  # 20288 of 40670 images, submit to https://competitions.codalab.org/competitions/20794
 
 # Classes
-nc: 19  # number of classes
-names: ['person', 'bicycle', 'car', 'motorcycle', 'airplane', 'bus', 'train', 'truck', 'boat', 'traffic light',
-        'fire hydrant', 'stop sign', 'parking meter', 'bench', 'bird', 'cat', 'dog', 'horse', 'sheep']  # class names
-
+nc: 11  # number of classes
+names: ['Animal', 'Archway', 'Bicyclist', 'Bridge', 'Building', 'Car', 'CartLuggagePram', 'Child', 'Column_Pole', 'Fence','LaneMkgsDriv']
 
 # Download script/URL (optional)
 download: |

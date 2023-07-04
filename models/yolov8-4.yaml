@@ -1,9 +1,9 @@
 # Ultralytics YOLO 🚀, AGPL-3.0 license
 
 # Parameters
-nc: 19  # number of classes
+nc: 11  # number of classes
 depth_multiple: 1.0  # model depth multiple
-width_multiple: 1.0 # layer channel multiple
+width_multiple: 1.25 # layer channel multiple
 
 # YOLOv8.0n backbone
 backbone:
@@ -22,7 +22,9 @@ backbone:
 
 # YOLOv8.0n head
 head:
-  [[-1, 1, nn.Upsample, [None, 2, 'bilinear']],
+  [
+   #[-1, 1, Conv, [512, 1, 1]],
+   [-1, 1, nn.Upsample, [None, 2, 'bilinear']],
    [[-1, 6], 1, Concat, [1]],  # cat backbone P4
    [-1, 3, C2f, [512]],  # 12
 
@@ -36,7 +38,7 @@ head:
    [[-1, 2], 1, Concat, [1]],  # cat backbone P3
    [-1, 3, C2f, [128]],  # 18 (P3/8-small)
 
-   #[-1, 1, Conv, [1, 1, 1]],
+   #[-1, 1, Conv, [128, 1, 1]],
    [-1, 1, nn.Upsample, [None, 4, 'bilinear']],
    #[-1, 3, C2f, [1]],  # 20 (P3/8-small)
 
