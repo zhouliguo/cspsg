@@ -15,8 +15,8 @@ test: test-dev2017.txt  # 20288 of 40670 images, submit to https://competitions.
 
 # Classes
 nc: 19  # number of classes
-names: ['person', 'bicycle', 'car', 'motorcycle', 'airplane', 'bus', 'train', 'truck', 'boat', 'traffic light',
-        'fire hydrant', 'stop sign', 'parking meter', 'bench', 'bird', 'cat', 'dog', 'horse', 'sheep']  # class names
+names: ['road', 'sidewalk', 'building', 'wall', 'fence', 'pole', 'traffic light', 'traffic sign', 'vegetation', 'terrain',
+        'sky', 'person', 'rider', 'car', 'truck', 'bus', 'train', 'motorcycle', 'bicycle']  # class names
 
 
 # Download script/URL (optional)
